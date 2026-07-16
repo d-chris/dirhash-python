@@ -33,36 +33,29 @@ def map_osp(paths):
 
 
 class TestGetHasherFactory:
-    def test_get_guaranteed(self):
-        algorithm_and_hasher_factory = [
-            ("md5", hashlib.md5),
-            ("sha1", hashlib.sha1),
-            ("sha224", hashlib.sha224),
-            ("sha256", hashlib.sha256),
-            ("sha384", hashlib.sha384),
-            ("sha512", hashlib.sha512),
-        ]
-        assert algorithms_guaranteed == {a for a, _ in algorithm_and_hasher_factory}
-        for algorithm, expected_hasher_factory in algorithm_and_hasher_factory:
-            hasher_factory = _get_hasher_factory(algorithm)
-            assert hasher_factory == expected_hasher_factory
+    @pytest.mark.parametrize("algorithm", algorithms_guaranteed)
+    def test_get_guaranteed(self, algorithm):
+        expected_hasher_factory = getattr(hashlib, algorithm)
 
-    def test_get_available(self):
-        for algorithm in algorithms_available:
-            hasher_factory = _get_hasher_factory(algorithm)
-            try:
-                hasher = hasher_factory()
-            except ValueError as exc:
-                # Some "available" algorithms are not necessarily available
-                # (fails for e.g. 'ripemd160' in github actions for python 3.8).
-                # See: https://stackoverflow.com/questions/72409563/unsupported-hash-type-ripemd160-with-hashlib-in-python  # noqa: E501
-                print(f"Failed to create hasher for {algorithm}: {exc}")
-                assert exc.args[0] == f"unsupported hash type {algorithm}"
-                hasher = None
+        hasher_factory = _get_hasher_factory(algorithm)
+        assert hasher_factory == expected_hasher_factory
 
-            if hasher is not None:
-                assert hasattr(hasher, "update")
-                assert hasattr(hasher, "hexdigest")
+    @pytest.mark.parametrize("algorithm", algorithms_available)
+    def test_get_available(self, algorithm):
+        hasher_factory = _get_hasher_factory(algorithm)
+        try:
+            hasher = hasher_factory()
+        except ValueError as exc:
+            # Some "available" algorithms are not necessarily available
+            # (fails for e.g. 'ripemd160' in github actions for python 3.8).
+            # See: https://stackoverflow.com/questions/72409563/unsupported-hash-type-ripemd160-with-hashlib-in-python  # noqa: E501
+            print(f"Failed to create hasher for {algorithm}: {exc}")
+            assert exc.args[0] == f"unsupported hash type {algorithm}"
+            hasher = None
+
+        if hasher is not None:
+            assert hasattr(hasher, "update")
+            assert hasattr(hasher, "hexdigest")
 
     def test_not_available(self):
         with pytest.raises(ValueError):
