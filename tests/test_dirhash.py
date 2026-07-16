@@ -164,7 +164,11 @@ class TempDirTest:
                 f.write(content)
 
     def symlink(self, src, dst):
-        os.symlink(self.path_to(src), self.path_to(dst))
+        try:
+            os.symlink(self.path_to(src), self.path_to(dst))
+        except OSError:
+            if os.name == "nt":
+                pytest.xfail("Windows may lack symlink privilege.")
 
     def remove(self, relpath):
         if os.path.isdir(self.path_to(relpath)):
@@ -699,6 +703,11 @@ class TestDirhash(TempDirTest):
         assert elapsed_muliproc < 0.9 * expected_min_elapsed_sequential
         # just check "any speedup", the overhead varies (and is high on Travis)
 
+    @pytest.mark.xfail(
+        os.name == "nt",
+        raises=OSError,
+        reason="Windows may lack symlink privilege.",
+    )
     def test_cache_by_real_path_speedup(self, tmpdir):
         num_links = 10
 
@@ -735,6 +744,11 @@ class TestDirhash(TempDirTest):
         elapsed_with_links = end - start
         assert elapsed_with_links < expected_max_elapsed_with_links
 
+    @pytest.mark.xfail(
+        os.name == "nt",
+        raises=OSError,
+        reason="Windows may lack symlink privilege.",
+    )
     def test_cache_together_with_multiprocess_speedup(self, tmpdir):
         target_file_names = ["target_file_1", "target_file_2"]
         num_links_per_file = 10
