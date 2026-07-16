@@ -1,4 +1,6 @@
+import contextlib
 import os
+import re
 import shlex
 import subprocess
 import sys
@@ -252,3 +254,23 @@ class TestCLI:
             o, error, returncode = dirhash_run(". --chunk-size not_an_int")
             assert returncode > 0
             assert error != ""
+
+
+@pytest.fixture(scope="module")
+def default_tree(tmpdir_factory: pytest.TempPathFactory):
+    tmpdir = tmpdir_factory.mktemp("default_tree")
+
+    create_default_tree(tmpdir)
+    with contextlib.chdir(tmpdir):
+        yield tmpdir
+
+
+@pytest.mark.parametrize("jobs", [1, 2])
+@pytest.mark.parametrize(
+    "algorithm", sorted(dirhash.algorithms_available | dirhash.algorithms_guaranteed)
+)
+@pytest.mark.usefixtures("default_tree")
+def test_run_algorithms(algorithm, jobs):
+    o, error, returncode = dirhash_run(f". -a {algorithm} --jobs {jobs}")
+    assert returncode == 0, error
+    assert re.match(r"^[0-9a-f]{32,}$", o.strip())
