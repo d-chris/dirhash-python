@@ -1,5 +1,6 @@
 import hashlib
 import os
+import pickle
 import shutil
 import tempfile
 from time import sleep, time
@@ -56,6 +57,15 @@ class TestGetHasherFactory:
         if hasher is not None:
             assert hasattr(hasher, "update")
             assert hasattr(hasher, "hexdigest")
+
+    @pytest.mark.parametrize(
+        "algorithm", list(algorithms_guaranteed | algorithms_available)
+    )
+    def test_hasher_pickleable(self, algorithm):
+        hasher_factory = _get_hasher_factory(algorithm)
+
+        unpickled = pickle.loads(pickle.dumps(hasher_factory))
+        assert unpickled(b"data").hexdigest() == hasher_factory(b"data").hexdigest()
 
     def test_not_available(self):
         with pytest.raises(ValueError):
@@ -855,3 +865,16 @@ def mock_func(x):
 def test_parmap(jobs):
     inputs = [1, 2, 3, 4]
     assert _parmap(mock_func, inputs, jobs=jobs) == [2, 4, 6, 8]
+
+
+@pytest.mark.parametrize(
+    "algorithm", list(algorithms_guaranteed | algorithms_available)
+)
+@pytest.mark.parametrize("jobs", [1, 2])
+def test_parmap_hasher(jobs, algorithm):
+    hasher_factory = _get_hasher_factory(algorithm)
+    dataset = [b"", b"data"]
+    result = _parmap(hasher_factory, dataset, jobs=jobs)
+
+    assert len(result) == len(dataset)
+    assert all(hasattr(hash, "hexdigest") for hash in result)
