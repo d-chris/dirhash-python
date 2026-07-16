@@ -59,7 +59,7 @@ class TestGetHasherFactory:
             assert hasattr(hasher, "hexdigest")
 
     @pytest.mark.parametrize(
-        "algorithm", list(algorithms_guaranteed | algorithms_available)
+        "algorithm", sorted(algorithms_guaranteed | algorithms_available)
     )
     def test_hasher_pickleable(self, algorithm):
         hasher_factory = _get_hasher_factory(algorithm)
@@ -868,7 +868,7 @@ def test_parmap(jobs):
 
 
 @pytest.mark.parametrize(
-    "algorithm", list(algorithms_guaranteed | algorithms_available)
+    "algorithm", sorted(algorithms_guaranteed | algorithms_available)
 )
 @pytest.mark.parametrize("jobs", [1, 2])
 def test_parmap_hasher(jobs, algorithm):
