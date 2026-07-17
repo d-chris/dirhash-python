@@ -36,10 +36,10 @@ def map_osp(paths):
 class TestGetHasherFactory:
     @pytest.mark.parametrize("algorithm", algorithms_guaranteed)
     def test_get_guaranteed(self, algorithm):
-        expected_hasher_factory = getattr(hashlib, algorithm)
+        expected_hasher_factory = getattr(hashlib, algorithm)()
 
         hasher_factory = _get_hasher_factory(algorithm)
-        assert hasher_factory == expected_hasher_factory
+        assert hasher_factory.hash.name == expected_hasher_factory.name
 
     @pytest.mark.parametrize("algorithm", algorithms_available)
     def test_get_available(self, algorithm):
