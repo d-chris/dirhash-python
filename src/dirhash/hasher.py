@@ -80,6 +80,12 @@ class PickableHasher(FactoryHasher):
         >>> PickableHasher("md5", b"data").hexdigest()
         '8d777f385d3dfec8815d20f7496026dc'
         """
+
+        if self._hash.digest_size == 0:
+            *_, bits = self._hash.name.split("_")
+
+            kwargs.setdefault("length", int(bits) // 8)
+
         return self._hash.hexdigest(**kwargs)
 
     def copy(self) -> t.Self:
