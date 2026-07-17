@@ -73,7 +73,7 @@ class PickableHasher(FactoryHasher):
         """
         self._hash.update(data)
 
-    def hexdigest(self, **kwargs) -> str:
+    def hexdigest(self, length: int | None = None) -> str:
         """
         Return the digest value as a string of hexadecimal digits.
 
@@ -81,12 +81,12 @@ class PickableHasher(FactoryHasher):
         '8d777f385d3dfec8815d20f7496026dc'
         """
 
-        if self._hash.digest_size == 0:
-            *_, bits = self._hash.name.split("_")
+        if self._hash.digest_size:
+            return self._hash.hexdigest()
 
-            kwargs.setdefault("length", int(bits) // 8)
+        *_, bits = self._hash.name.split("_")  # "shake_128" or "shake_256"
 
-        return self._hash.hexdigest(**kwargs)
+        return self._hash.hexdigest(length or int(bits) // 8)
 
     def copy(self) -> t.Self:
         """

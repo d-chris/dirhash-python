@@ -1,4 +1,3 @@
-import contextlib
 import os
 import shlex
 import subprocess
@@ -260,8 +259,13 @@ def default_tree(tmpdir_factory: pytest.TempPathFactory):
     tmpdir = tmpdir_factory.mktemp("default_tree")
 
     create_default_tree(tmpdir)
-    with contextlib.chdir(tmpdir):
+
+    cwd = os.getcwd()
+    try:
+        os.chdir(tmpdir)
         yield tmpdir
+    finally:
+        os.chdir(cwd)
 
 
 @pytest.mark.parametrize(
