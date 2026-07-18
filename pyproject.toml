@@ -14,3 +14,31 @@ lint.select = [
   "W",  # pycodestyle warnings
 ]
 lint.isort.known-local-folder = [ "dirhash" ]
+
+[tool.pytest]
+ini_options.minversion = "6.0"
+ini_options.testpaths = [
+  "src/dirhash/hasher.py",
+  "tests",
+]
+ini_options.addopts = [
+  "--cov=dirhash",
+  "--cov-report=xml",
+  "--cov-report=term-missing",
+  "--doctest-modules",
+]
+
+[tool.coverage]
+run.branch = true
+run.omit = [
+  "_version.py",
+  "tests/*",
+]
+report.exclude_lines = [
+  "@t.runtime_checkable",
+  "def __\\w+__",
+  "except ImportError",
+  'if __name__ == "__main__":',
+  "if t.TYPE_CHECKING:",
+  "pragma: no cover",
+]
