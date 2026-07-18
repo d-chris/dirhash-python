@@ -7,6 +7,13 @@ try:
 except ImportError:
     import typing as t  # type: ignore[no-redef]
 
+if t.TYPE_CHECKING:
+
+    class HasherState(t.TypedDict):
+        name: str
+        data: bytes
+        kwargs: dict[str, t.Any]
+
 
 @t.runtime_checkable
 class FactoryHasher(t.Protocol):
@@ -50,7 +57,7 @@ class PickableHasher(FactoryHasher):
         if algorithm not in self.algorithms:
             raise ValueError(f"Unknown hash algorithm: {algorithm!r}")
 
-        self._state = {
+        self._state: HasherState = {
             "name": algorithm,
             "data": data,
             "kwargs": kwargs,
@@ -73,20 +80,25 @@ class PickableHasher(FactoryHasher):
         """
         self._hash.update(data)
 
-    def hexdigest(self, length: int | None = None) -> str:
+    def hexdigest(self, length: int | None = None) -> str:  # type: ignore[override]
         """
         Return the digest value as a string of hexadecimal digits.
 
-        >>> PickableHasher("md5", b"data").hexdigest()
-        '8d777f385d3dfec8815d20f7496026dc'
+        >>> PickableHasher("shake_128", b"data").hexdigest()
+        '6d5d29b8058bdf6517f2487f8dc537ab'
+        >>> PickableHasher("shake_128", b"data").hexdigest(length=16)
+        '6d5d29b8058bdf6517f2487f8dc537ab'
         """
 
         if self._hash.digest_size:
             return self._hash.hexdigest()
 
-        *_, bits = self._hash.name.split("_")  # "shake_128" or "shake_256"
+        def shake_digestsize() -> int:
+            """return a default digest size for shake_128 and shake_256."""
+            *_, bits = self._hash.name.split("_")
+            return int(bits) // 8
 
-        return self._hash.hexdigest(length or int(bits) // 8)
+        return self._hash.hexdigest(length or shake_digestsize())  # type: ignore[call-arg]
 
     def copy(self) -> t.Self:
         """
@@ -121,10 +133,10 @@ class PickableHasher(FactoryHasher):
     def __getattr__(self, name: str) -> t.Any:
         return getattr(self._hash, name)
 
-    def __getstate__(self) -> dict[str, t.Any]:
+    def __getstate__(self) -> HasherState:
         return self._state
 
-    def __setstate__(self, state: dict[str, t.Any]) -> None:
+    def __setstate__(self, state: HasherState) -> None:
         self._state = state
         self._hash = hashlib.new(state["name"], state["data"], **state["kwargs"])
 
